@@ -183,6 +183,11 @@ if (object_write(OBJ_TREE, buffer, total_size, &tree_id) != 0) {
     free(buffer);
     return -1;
 }
+// Step 6: Cleanup and return
+free(buffer);
+
+// Return tree ID
+return tree_id;
     // TODO: Implement recursive tree building
     // (See Lab Appendix for logical steps)
     (void)id_out;
