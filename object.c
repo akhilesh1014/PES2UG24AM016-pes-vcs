@@ -237,6 +237,27 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         return NULL;
     }
     
+        // Step 3: Parse header
+
+    // Find end of header (\0)
+    char *header_end = memchr(buffer, '\0', file_size);
+    if (!header_end) {
+        free(buffer);
+        return NULL;
+    }
+
+    // Extract type and size
+    sscanf((char *)buffer, "%s %zu", type, size_out);
+
+    // Extract actual data
+    void *data = malloc(*size_out);
+    memcpy(data, header_end + 1, *size_out);
+
+    // Cleanup
+    free(buffer);
+
+    return data;
+    
     (void)id; (void)type_out; (void)data_out; (void)len_out;
     return -1;
 }
