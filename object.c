@@ -219,6 +219,24 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     unsigned char *buffer = malloc(file_size);
     fread(buffer, 1, file_size, f);
     fclose(f);
+    
+        // Step 2: Verify hash
+    unsigned char computed[32];
+    SHA256(buffer, file_size, computed);
+
+    // Convert to hex
+    char computed_hex[65];
+    for (int i = 0; i < 32; i++) {
+        sprintf(computed_hex + i * 2, "%02x", computed[i]);
+    }
+    computed_hex[64] = '\0';
+
+    // Compare with given hash
+    if (strcmp(computed_hex, hash) != 0) {
+        free(buffer);
+        return NULL;
+    }
+    
     (void)id; (void)type_out; (void)data_out; (void)len_out;
     return -1;
 }
