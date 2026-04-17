@@ -175,7 +175,14 @@ for (size_t i = 0; i < tree.count; i++) {
     ptr += HASH_SIZE;
 }
 
+    // Step 5: Store tree object
 
+ObjectID tree_id;
+
+if (object_write(OBJ_TREE, buffer, total_size, &tree_id) != 0) {
+    free(buffer);
+    return -1;
+}
     // TODO: Implement recursive tree building
     // (See Lab Appendix for logical steps)
     (void)id_out;
