@@ -71,7 +71,20 @@ unsigned char *buffer = malloc(total_size);
 memcpy(buffer, header, header_len);
 memcpy(buffer + header_len, data, size);
 
+unsigned char hash[32];
+SHA256(buffer, total_size, hash);
 
+// Convert hash to hex string
+char hex[65];
+for (int i = 0; i < 32; i++) {
+    sprintf(hex + i * 2, "%02x", hash[i]);
+}
+hex[64] = '\0';
+
+// Copy to output if needed
+if (out_hash) {
+    strcpy(out_hash, hex);
+}
 // Write an object to the store.
 //
 // Object format on disk:
