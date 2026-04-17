@@ -85,6 +85,21 @@ hex[64] = '\0';
 if (out_hash) {
     strcpy(out_hash, hex);
 }
+
+// Step 4: Create directory path
+
+char dir_path[256];
+snprintf(dir_path, sizeof(dir_path), ".pes/objects/%.2s", hex);
+
+// Create directories if not exist
+mkdir(".pes", 0755);
+mkdir(".pes/objects", 0755);
+mkdir(dir_path, 0755);
+
+// Step 5: Create full file path
+char file_path[512];
+snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, hex + 2);
+
 // Write an object to the store.
 //
 // Object format on disk:
