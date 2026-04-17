@@ -14,5 +14,3 @@
 - ./pes commit -m "message"
 - ./pes log
 
-## Author
-Your Name
