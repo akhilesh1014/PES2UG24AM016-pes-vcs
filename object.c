@@ -128,6 +128,12 @@ if (write(fd, buffer, total_size) != total_size) {
 // Flush to disk
 fsync(fd);
 close(fd);
+
+// Step 7: Atomic rename to final path
+if (rename(temp_path, file_path) != 0) {
+    free(buffer);
+    return -1;
+}
 // Write an object to the store.
 //
 // Object format on disk:
