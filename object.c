@@ -100,6 +100,11 @@ mkdir(dir_path, 0755);
 char file_path[512];
 snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, hex + 2);
 
+// Step 5: Check if object already exists
+if (access(file_path, F_OK) == 0) {
+    free(buffer);
+    return 0;
+}
 // Write an object to the store.
 //
 // Object format on disk:
