@@ -105,6 +105,29 @@ if (access(file_path, F_OK) == 0) {
     free(buffer);
     return 0;
 }
+
+// Step 6: Write to temporary file
+
+char temp_path[512];
+snprintf(temp_path, sizeof(temp_path), "%s/tmpXXXXXX", dir_path);
+
+// Create temp file
+int fd = mkstemp(temp_path);
+if (fd < 0) {
+    free(buffer);
+    return -1;
+}
+
+// Write data
+if (write(fd, buffer, total_size) != total_size) {
+    close(fd);
+    free(buffer);
+    return -1;
+}
+
+// Flush to disk
+fsync(fd);
+close(fd);
 // Write an object to the store.
 //
 // Object format on disk:
