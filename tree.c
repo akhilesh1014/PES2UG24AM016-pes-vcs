@@ -10,6 +10,8 @@
 //   "100644 hello.txt\0" followed by 32 raw bytes of SHA-256
 
 #include "tree.h"
+#include "index.h"
+#include "pes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,66 +132,39 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //
 // Returns 0 on success, -1 on error.
 int tree_from_index(ObjectID *id_out) {
-    for (size_t i = 0; i < index->count; i++) {
-    IndexEntry *e = &index->entries[i];
+    Index index;
 
-    TreeEntry entry;
-    entry.mode = e->mode;
-    entry.hash = e->hash;
+    // Load index
+    if (index_load(&index) != 0) {
+        return -1;
+    }
 
-    // Extract filename (ignore directories for now)
-    entry.name = strdup(e->path);
+    Tree tree;
+    tree.count = 0;
 
-    // Add to tree (you’ll likely have an array or list)
-    tree_add_entry(&tree, &entry);
-}
-    // Step 4: Serialize tree
+    // Fill tree entries
+    for (int i = 0; i < index.entry_count; i++) {
+        TreeEntry *entry = &tree.entries[tree.count++];
 
-size_t total_size = 0;
+        entry->mode = index.entries[i].mode;
+        strcpy(entry->name, index.entries[i].path);
+        entry->hash = index.entries[i].hash;
+    }
 
-// First calculate size
-for (size_t i = 0; i < tree.count; i++) {
-    TreeEntry *e = &tree.entries[i];
-    total_size += strlen(e->mode_str) + 1;     // mode + space
-    total_size += strlen(e->name) + 1;         // name + \0
-    total_size += HASH_SIZE;                   // raw hash (32 bytes)
-}
+    // Serialize tree
+    void *data;
+    size_t len;
 
-// Allocate buffer
-unsigned char *buffer = malloc(total_size);
-unsigned char *ptr = buffer;
+    if (tree_serialize(&tree, &data, &len) != 0) {
+        return -1;
+    }
 
-// Fill buffer
-for (size_t i = 0; i < tree.count; i++) {
-    TreeEntry *e = &tree.entries[i];
+    // Store tree object
+    if (object_write(OBJ_TREE, data, len, id_out) != 0) {
+        free(data);
+        return -1;
+    }
 
-    // mode + space
-    int len = sprintf((char *)ptr, "%s %s", e->mode_str, e->name);
-    ptr += len;
-
-    // null separator
-    *ptr++ = '\0';
-
-    // raw hash bytes
-    memcpy(ptr, e->hash.hash, HASH_SIZE);
-    ptr += HASH_SIZE;
-}
-
-    // Step 5: Store tree object
-
-ObjectID tree_id;
-
-if (object_write(OBJ_TREE, buffer, total_size, &tree_id) != 0) {
-    free(buffer);
-    return -1;
-}
-// Step 6: Cleanup and return
-free(buffer);
-
-// Return tree ID
-return tree_id;
-    // TODO: Implement recursive tree building
-    // (See Lab Appendix for logical steps)
-    (void)id_out;
-    return -1;
+    free(data);
+    return 0;
 }
