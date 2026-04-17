@@ -65,6 +65,12 @@ int object_exists(const ObjectID *id) {
 char header[64];
 int header_len = sprintf(header, "%s %zu", type, size) + 1;
 
+size_t total_size = header_len + size;
+unsigned char *buffer = malloc(total_size);
+
+memcpy(buffer, header, header_len);
+memcpy(buffer + header_len, data, size);
+
 
 // Write an object to the store.
 //
