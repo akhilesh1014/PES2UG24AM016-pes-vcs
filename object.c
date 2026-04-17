@@ -62,7 +62,41 @@ int object_exists(const ObjectID *id) {
 
 // ─── TODO: Implement these ──────────────────────────────────────────────────
 
-char header[64];
+
+// Write an object to the store.
+//
+// Object format on disk:
+//   "<type> <size>\0<data>"
+//   where <type> is "blob", "tree", or "commit"
+//   and <size> is the decimal string of the data length
+//
+// Steps:
+//   1. Build the full object: header ("blob 16\0") + data
+//   2. Compute SHA-256 hash of the FULL object (header + data)
+//   3. Check if object already exists (deduplication) — if so, just return success
+//   4. Create shard directory (.pes/objects/XX/) if it doesn't exist
+//   5. Write to a temporary file in the same shard directory
+//   6. fsync() the temporary file to ensure data reaches disk
+//   7. rename() the temp file to the final path (atomic on POSIX)
+//   8. Open and fsync() the shard directory to persist the rename
+//   9. Store the computed hash in *id_out
+
+// HINTS - Useful syscalls and functions for this phase:
+//   - sprintf / snprintf : formatting the header string
+//   - compute_hash       : hashing the combined header + data
+//   - object_exists      : checking for deduplication
+//   - mkdir              : creating the shard directory (use mode 0755)
+//   - open, write, close : creating and writing to the temp file
+//                          (Use O_CREAT | O_WRONLY | O_TRUNC, mode 0644)
+//   - fsync              : flushing the file descriptor to disk
+//   - rename             : atomically moving the temp file to the final path
+//
+
+//
+// Returns 0 on success, -1 on error.
+int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
+    // TODO: Implement
+    char header[64];
 int header_len = sprintf(header, "%s %zu", type, size) + 1;
 
 size_t total_size = header_len + size;
@@ -140,39 +174,6 @@ free(buffer);
 
 // Success
 return 0;
-// Write an object to the store.
-//
-// Object format on disk:
-//   "<type> <size>\0<data>"
-//   where <type> is "blob", "tree", or "commit"
-//   and <size> is the decimal string of the data length
-//
-// Steps:
-//   1. Build the full object: header ("blob 16\0") + data
-//   2. Compute SHA-256 hash of the FULL object (header + data)
-//   3. Check if object already exists (deduplication) — if so, just return success
-//   4. Create shard directory (.pes/objects/XX/) if it doesn't exist
-//   5. Write to a temporary file in the same shard directory
-//   6. fsync() the temporary file to ensure data reaches disk
-//   7. rename() the temp file to the final path (atomic on POSIX)
-//   8. Open and fsync() the shard directory to persist the rename
-//   9. Store the computed hash in *id_out
-
-// HINTS - Useful syscalls and functions for this phase:
-//   - sprintf / snprintf : formatting the header string
-//   - compute_hash       : hashing the combined header + data
-//   - object_exists      : checking for deduplication
-//   - mkdir              : creating the shard directory (use mode 0755)
-//   - open, write, close : creating and writing to the temp file
-//                          (Use O_CREAT | O_WRONLY | O_TRUNC, mode 0644)
-//   - fsync              : flushing the file descriptor to disk
-//   - rename             : atomically moving the temp file to the final path
-//
-
-//
-// Returns 0 on success, -1 on error.
-int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
-    // TODO: Implement
     (void)type; (void)data; (void)len; (void)id_out;
     return -1;
 }
@@ -201,6 +202,23 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 // Returns 0 on success, -1 on error (file not found, corrupt, etc.).
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
     // TODO: Implement
+    // Step 1: Build file path
+    char file_path[512];
+    snprintf(file_path, sizeof(file_path), ".pes/objects/%.2s/%s", hash, hash + 2);
+
+    // Open file
+    FILE *f = fopen(file_path, "rb");
+    if (!f) return NULL;
+
+    // Get file size
+    fseek(f, 0, SEEK_END);
+    size_t file_size = ftell(f);
+    rewind(f);
+
+    // Read file into buffer
+    unsigned char *buffer = malloc(file_size);
+    fread(buffer, 1, file_size, f);
+    fclose(f);
     (void)id; (void)type_out; (void)data_out; (void)len_out;
     return -1;
 }
