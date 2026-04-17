@@ -134,6 +134,12 @@ if (rename(temp_path, file_path) != 0) {
     free(buffer);
     return -1;
 }
+
+// Step 8: Cleanup
+free(buffer);
+
+// Success
+return 0;
 // Write an object to the store.
 //
 // Object format on disk:
