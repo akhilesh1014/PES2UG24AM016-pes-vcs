@@ -134,7 +134,6 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 int tree_from_index(ObjectID *id_out) {
     Index index;
 
-    // Load index
     if (index_load(&index) != 0) {
         return -1;
     }
@@ -142,8 +141,7 @@ int tree_from_index(ObjectID *id_out) {
     Tree tree;
     tree.count = 0;
 
-    // Fill tree entries
-    for (int i = 0; i < index.entry_count; i++) {
+    for (int i = 0; i < index.count; i++) {
         TreeEntry *entry = &tree.entries[tree.count++];
 
         entry->mode = index.entries[i].mode;
@@ -151,7 +149,6 @@ int tree_from_index(ObjectID *id_out) {
         entry->hash = index.entries[i].hash;
     }
 
-    // Serialize tree
     void *data;
     size_t len;
 
@@ -159,7 +156,6 @@ int tree_from_index(ObjectID *id_out) {
         return -1;
     }
 
-    // Store tree object
     if (object_write(OBJ_TREE, data, len, id_out) != 0) {
         free(data);
         return -1;
